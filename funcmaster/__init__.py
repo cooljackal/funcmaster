@@ -1,6 +1,8 @@
 import sys
 import logging
 
+name = "funcmaster"
+
 logging.basicConfig(
     level=logging.DEBUG, format="%(asctime)s | %(levelname)5s | %(message)s"
 )
