@@ -1,10 +1,11 @@
 import sys
 import logging
+import traceback
 
 name = "funcmaster"
 
 logging.basicConfig(
-    level=logging.DEBUG, format="%(asctime)s | %(levelname)5s | %(message)s"
+    level=logging.DEBUG, format="%(asctime)s - %(levelname)5s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -39,6 +40,32 @@ def operation(func):
     return Operation(func)
 
 
+class LogWrapper:
+    def __init__(self, logger, source):
+        self.logger = logger
+        self.source = source
+
+    def __log__(self, event, message, level):
+        self.logger.log(
+            level, "source='%s' event='%s' message='%s'" % (self.source, event, message)
+        )
+
+    def debug(self, message, event="info"):
+        self.__log__(event, message, logging.DEBUG)
+
+    def info(self, message, event="info"):
+        self.__log__(event, message, logging.INFO)
+
+    def warn(self, message, event="info"):
+        self.__log__(event, message, logging.WARN)
+
+    def error(self, message, event="info"):
+        self.__log__(event, message, logging.ERROR)
+
+    def critical(self, message, event="info"):
+        self.__log__(event, message, logging.CRITICAL)
+
+
 class Process:
     """A class that represents a complete collection of operations."""
 
@@ -48,6 +75,7 @@ class Process:
         self.name = name or func.__name__
         self.initialized = False
         self.executed = False
+        self.log = LogWrapper(logger, self.name)
 
     def __str__(self):
         return self.name
@@ -57,12 +85,13 @@ class Process:
 
     def __call__(self):
         """Build a list of operations by doing a "dry-run"."""
-        logger.info("Process [%s] planning started" % self.name)
+        self.log.info(
+            "Starting to plan the order of operations", "process_planning_started"
+        )
         if not self.initialized:
             self.func()
             self.initialized = True
-            logger.info("Process [%s] initialized" % self.name)
-        logger.info("Process [%s] planning complete" % self.name)
+        self.log.info("Completed the execution plan", "process_planning_finished")
         return self
 
     def add_operation(self, operation):
@@ -70,8 +99,8 @@ class Process:
         existing_operation = self.find_operation(operation.name)
         if existing_operation == None:
             self.operations.append(operation)
-            logger.info(
-                "Operation [%s] added to Process [%s]" % (operation.name, self.name)
+            self.log.info(
+                "Added operation %s" % operation.name, "process_added_operation"
             )
 
     def find_operation(self, name):
@@ -84,15 +113,19 @@ class Process:
 
     def run(self):
         if self.initialized and not self.executed:
-            logger.info("Process [%s] finished" % self.name)
+            self.log.info("Started execution of process", "process_started")
             for operation in self.operations:
                 try:
                     operation.run()
                 except Exception:
-                    logger.error("Process [%s] stopped due to error" % self.name)
+                    self.log.error(
+                        "Process stopped due to an error with operation %s"
+                        % operation.name,
+                        "process_error",
+                    )
                     exit(1)
             self.executed = True
-            logger.info("Process [%s] finished" % self.name)
+            self.log.info("Finished execution of process", "process_finished")
 
 
 class Operation:
@@ -104,6 +137,7 @@ class Operation:
         self.initialized = False
         self.executed = False
         self.result = None
+        self.log = LogWrapper(logger, self.name)
 
     def __str__(self):
         return self.name
@@ -162,17 +196,19 @@ class Operation:
         elif self.executed:
             return self.result
         else:
-            logger.info("Operation [%s] started" % self.name)
+            self.log.info("Started execution of operation", "operation_started")
             try:
                 self.result = self.func(
                     *self.__evaluate_args__(self.args),
                     **self.__evaluate_kwargs__(self.kwargs)
                 )
                 self.executed = True
-            except Exception:
-                logger.error("Operation [%s] stopped due to error" % self.name, exc_info=True)
+            except Exception as e:
+                self.log.error(
+                    "".join(traceback.format_tb(e.__traceback__)), "operation_error"
+                )
                 raise
-            logger.info("Operation [%s] finished" % self.name)
+            self.log.info("Finished execution of operation", "operation_finished")
             return self.result
 
     def clone(self, name):
@@ -180,5 +216,6 @@ class Operation:
         existing_operation = parent_process().find_operation(name)
         cloned = existing_operation or operation(self.func)
         cloned.name = name
+        cloned.log = LogWrapper(logger, name)
         return cloned
 
