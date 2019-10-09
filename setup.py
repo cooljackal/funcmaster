@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="funcmaster",
-    version="0.0.1",
+    version="0.0.2",
     author="Farhan Husain",
     author_email="cooljackal@gmail.com",
     description="A straightforward workflow tool that is easy to use.",
