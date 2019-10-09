@@ -18,8 +18,6 @@ def multiply(x, y):
 
 
 @process
-def hello_world():
+def hello_world_process():
     multiply(add(1, 2), sub(5, 3))
 
-
-execute_process(hello_world)

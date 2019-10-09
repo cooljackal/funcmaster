@@ -13,6 +13,9 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/cooljackal/funcmaster",
     packages=["funcmaster"],
+    entry_points={
+        'console_scripts': ['funcmaster=funcmaster.cli:main'],
+    },
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: Apache Software License",
