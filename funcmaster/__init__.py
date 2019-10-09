@@ -1,6 +1,7 @@
 import sys
 import logging
 import traceback
+import collections
 
 name = "funcmaster"
 
@@ -8,6 +9,8 @@ logging.basicConfig(
     level=logging.DEBUG, format="%(asctime)s - %(levelname)5s - %(message)s"
 )
 logger = logging.getLogger(__name__)
+
+Context = collections.namedtuple("Context", "config log")
 
 
 def parent_process():
@@ -116,7 +119,7 @@ class Process:
             self.log.info("Started execution of process", "process_started")
             for operation in self.operations:
                 try:
-                    operation.run()
+                    operation.run(Context({}, LogWrapper(logger, operation.name)))
                 except Exception:
                     self.log.error(
                         "Process stopped due to an error with operation %s"
@@ -188,7 +191,7 @@ class Operation:
                 evaluated_kwargs[key] = kwargs[key]
         return evaluated_kwargs
 
-    def run(self):
+    def run(self, context):
         if not self.initialized:
             raise RuntimeError(
                 "operation %s cannot be run before being initialized" % self.name
@@ -199,6 +202,7 @@ class Operation:
             self.log.info("Started execution of operation", "operation_started")
             try:
                 self.result = self.func(
+                    context,
                     *self.__evaluate_args__(self.args),
                     **self.__evaluate_kwargs__(self.kwargs)
                 )

@@ -3,17 +3,20 @@ from funcmaster import process, operation, execute_process
 
 
 @operation
-def add(x, y):
+def add(context, x, y):
+    context.log.info("Add: %i + %i = %i" % (x, y, x + y))
     return x + y
 
 
 @operation
-def sub(x, y):
+def sub(context, x, y):
+    context.log.info("Subtract: %i - %i = %i" % (x, y, x - y))
     return x - y
 
 
 @operation
-def multiply(x, y):
+def multiply(context, x, y):
+    context.log.info("Multiply: %i * %i = %i" % (x, y, x * y))
     return x * y
 
 
